@@ -1,0 +1,7 @@
+timestamp,client_ip,method,path,status_code,bytes_sent,user_agent
+2026-09-28T10:00:01Z,192.168.1.15,GET,/index.html,200,4320,Mozilla/5.0
+2026-09-28T10:00:04Z,192.168.1.15,GET,/api/products,200,12890,Mozilla/5.0
+2026-09-28T10:00:10Z,45.154.255.88,GET,/login.php?user=admin' OR '1'='1,403,512,sqlmap/1.7
+2026-09-28T10:00:12Z,45.154.255.88,GET,/view?file=../../../../etc/passwd,403,320,Nikto/2.1
+2026-09-28T10:00:15Z,192.168.1.42,POST,/api/cart,200,1024,Mozilla/5.0
+2026-09-28T10:00:20Z,45.154.255.88,GET,/actuator/health,404,240,python-requests/2.31

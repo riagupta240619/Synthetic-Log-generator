@@ -1,0 +1,8 @@
+Oct 12 04:02:11 web-dmz-01 sshd[24102]: Failed password for invalid user admin from 194.26.29.112 port 43122 ssh2
+Oct 12 04:02:14 web-dmz-01 sshd[24104]: Failed password for invalid user root from 194.26.29.112 port 43124 ssh2
+Oct 12 04:02:16 web-dmz-01 sshd[24107]: Failed password for invalid user test from 194.26.29.112 port 43128 ssh2
+Oct 12 04:02:19 web-dmz-01 sshd[24110]: Failed password for invalid user deploy from 194.26.29.112 port 43132 ssh2
+Oct 12 04:02:24 web-dmz-01 sshd[24115]: Accepted password for root from 194.26.29.112 port 43140 ssh2
+Oct 12 04:02:26 web-dmz-01 sudo[24118]: root : TTY=pts/0 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow
+Oct 12 04:02:29 web-dmz-01 systemd[1]: Started Session 142 of user root.
+Oct 12 04:05:00 web-dmz-01 cron[24200]: (CRON) info (No MTA installed, discarding output)
