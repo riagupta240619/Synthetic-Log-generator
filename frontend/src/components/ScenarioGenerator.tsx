@@ -22,8 +22,8 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
   const [scenarioName, setScenarioName] = useState('ssh_brute_force');
   const [count, setCount] = useState(150);
   const [datasetName, setDatasetName] = useState('');
-  const [anomalyRatio, setAnomalyRatio] = useState(0.85);
-  const [attackerIp, setAttackerIp] = useState('185.220.101.5');
+  const [anomalyRatio, setAnomalyRatio] = useState(0.10);
+  const [attackerIp, setAttackerIp] = useState('198.51.100.23');
   const [compromiseAtEnd, setCompromiseAtEnd] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -33,7 +33,7 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
       id: 'ssh_brute_force',
       title: 'SSH Authentication Brute Force & Breach',
       os: 'Linux (sshd)',
-      desc: 'Rapid password spraying against invalid and root users, ending with successful authentication and shell spawn.',
+      desc: 'Normal SSH/user activity with a small number of unusual authentication events interleaved across the timeline.',
       mitre: 'T1110 · T1078',
       color: 'var(--amber)',
     },
@@ -41,7 +41,7 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
       id: 'privilege_escalation',
       title: 'Linux Sudo & Privilege Escalation',
       os: 'Linux (sudo/su)',
-      desc: 'User sudo attempts without permissions, repeated password failures, sudo find escape, and root session takeover.',
+      desc: 'Routine developer activity with occasional unusual privilege transitions and privileged-session telemetry.',
       mitre: 'T1548.003',
       color: 'var(--rose)',
     },
@@ -49,7 +49,7 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
       id: 'web_attack_sqli',
       title: 'Web Application SQLi & Path Traversal',
       os: 'Web (Nginx/Apache)',
-      desc: 'High-volume web requests with SQL injection payloads (UNION SELECT, OR 1=1) and sensitive LFI paths (/etc/passwd, .env).',
+      desc: 'Normal application traffic with a small number of anomalous request patterns mixed into the stream.',
       mitre: 'T1190',
       color: 'var(--cyan)',
     },
@@ -57,7 +57,7 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
       id: 'ransomware_staging',
       title: 'Windows Ransomware Defense Evasion',
       os: 'Windows (EventID 4688/4663)',
-      desc: 'Execution of vssadmin delete shadows, bcedit recovery disabled, PowerShell encoded commands, and mass file encryption.',
+      desc: 'Normal Windows workstation telemetry with a small number of suspicious process/file/service behavior events.',
       mitre: 'T1490',
       color: 'var(--purple)',
     },
@@ -65,7 +65,7 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
       id: 'lateral_movement',
       title: 'Windows Lateral Movement (SMB/RPC)',
       os: 'Windows (EventID 4624)',
-      desc: 'Network logon (Type 3) across multiple internal workstations and domain controllers using compromised admin credentials.',
+      desc: 'Routine service-account network access with occasional unusual cross-host authentication.',
       mitre: 'T1021.002',
       color: 'var(--emerald)',
     },
@@ -73,7 +73,7 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
       id: 'benign_baseline',
       title: 'Benign Noise & System Telemetry',
       os: 'Multi-OS Baseline',
-      desc: 'Authentic normal noise: routine cron jobs, periodic health checks, benign developer logins, and package manager updates.',
+      desc: 'Normal enterprise activity with no injected anomaly, useful as a control dataset.',
       mitre: 'Normal Operations',
       color: 'var(--blue)',
     },
@@ -110,8 +110,8 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
       <PageHeader
         icon={Terminal}
         iconColor="var(--amber)"
-        title="Event &amp; Scenario-Based Telemetry Engine"
-        subtitle="Synthesize deterministic multi-stage attack scenarios with ground-truth causal sequences designed for SIEM rule validation."
+        title="Behavioral Telemetry &amp; Scenario Engine"
+        subtitle="Generate realistic enterprise activity streams with controlled behavioral anomalies for SIEM/Wazuh evaluation."
         badge={<Badge variant="warning">Ground Truth</Badge>}
       />
 
@@ -120,10 +120,10 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
         <div className="lg:col-span-2 space-y-3">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Select Attack / Security Scenario
+              Select Behavioral Scenario
             </h3>
             <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-              6 Pre-built Causal Chains
+              6 Pre-built Activity Models
             </span>
           </div>
 
@@ -228,10 +228,10 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    Attack vs. Benign Noise
+                    Behavioral Anomaly Ratio
                   </span>
                   <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem', fontWeight: 700, color: 'var(--amber)' }}>
-                    {Math.round(anomalyRatio * 100)}% Attack
+                    {Math.round(anomalyRatio * 100)}% anomalous
                   </span>
                 </div>
                 <input
@@ -244,13 +244,13 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
                   className="accent-amber-500"
                 />
                 <p style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.35rem', lineHeight: 1.4 }}>
-                  Blends background production noise to simulate high-traffic SOC telemetry.
+                  Controls how much of the activity stream is influenced by the selected behavioral anomaly. Lower values keep anomalies subtle.
                 </p>
               </div>
 
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>
-                  Simulated Attacker IP
+                  Synthetic External IP (optional)
                 </label>
                 <input
                   type="text"
@@ -271,7 +271,7 @@ export const ScenarioGenerator: React.FC<ScenarioGeneratorProps> = ({ onDatasetC
                   style={{ width: '16px', height: '16px' }}
                 />
                 <label htmlFor="compromise" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
-                  Include final breach &amp; post-exploitation event
+                  Include successful authentication transition (SSH scenario)
                 </label>
               </div>
 
