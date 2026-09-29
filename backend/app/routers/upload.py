@@ -13,6 +13,11 @@ async def upload_and_learn(
     dataset_name: Optional[str] = Form(None),
     synthetic_count: int = Form(100)
 ):
+    if synthetic_count < 1 or synthetic_count > 5000:
+        raise HTTPException(status_code=400, detail="synthetic_count must be between 1 and 5000")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="A filename is required")
+
     try:
         content = await file.read()
         reference_logs = FileLearnerEngine.parse_file(content, file.filename)
@@ -34,7 +39,10 @@ async def upload_and_learn(
             "created_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "schema_fields": list(synthetic_logs[0].keys()) if synthetic_logs else [],
             "validation_status": "unvalidated",
+            "validation_score": None,
+            "file_formats_available": ["json", "ndjson", "csv", "syslog_rfc3164", "syslog_rfc5424"],
             "wazuh_tested": False,
+            "wazuh_alerts_count": 0,
             "logs": synthetic_logs,
             "learned_profile": profile
         }
@@ -49,5 +57,9 @@ async def upload_and_learn(
             "learned_profile": profile,
             "sample_logs": synthetic_logs[:5]
         }
+    except HTTPException:
+        raise
+    except (UnicodeDecodeError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=f"Could not process uploaded log file: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File learning error: {str(e)}")
