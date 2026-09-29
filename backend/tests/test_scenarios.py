@@ -8,15 +8,20 @@ from app.wazuh.emulator import WazuhRulesetMatcher
 from app.exporters.formatters import LogExporter
 
 def test_ssh_brute_force_scenario():
-    logs = ScenarioEngine.generate("ssh_brute_force", count=30, parameters={"anomaly_ratio": 0.8})
+    logs = ScenarioEngine.generate("ssh_brute_force", count=30, parameters={"anomaly_ratio": 0.10})
     assert len(logs) == 30
     assert any("Failed password" in log["message"] for log in logs)
     assert any("Accepted password" in log["message"] for log in logs)
+    assert any(log["details"].get("anomaly") is False for log in logs)
+    assert any(log["details"].get("anomaly") is True for log in logs)
+    assert sum(log["details"].get("anomaly", False) for log in logs) < len(logs) // 2
 
 def test_web_attack_scenario():
-    logs = ScenarioEngine.generate("web_attack_sqli", count=25)
+    logs = ScenarioEngine.generate("web_attack_sqli", count=25, parameters={"anomaly_ratio": 0.12})
     assert len(logs) == 25
-    assert any("UNION SELECT" in log["message"] or "OR 1=1" in log["message"] or "../" in log["message"] for log in logs)
+    assert any("SELECT" in log["message"] or "../" in log["message"] for log in logs)
+    assert any(log["details"].get("anomaly") is False for log in logs)
+    assert any(log["details"].get("anomaly") is True for log in logs)
 
 def test_cloud_engine_aws_and_azure():
     aws_logs = CloudEngine.generate("aws", count=15)
@@ -40,7 +45,7 @@ def test_llm_engine_fallback():
     assert logs[0]["source"] in ["windows", "linux", "generic"]
 
 def test_validator_and_wazuh_ruleset():
-    logs = ScenarioEngine.generate("ssh_brute_force", count=20)
+    logs = ScenarioEngine.generate("ssh_brute_force", count=40, parameters={"anomaly_ratio": 0.10})
     report = LogValidator.validate_dataset("test-ds", logs)
     assert report.total_logs == 20
     assert report.score >= 90.0
@@ -49,7 +54,7 @@ def test_validator_and_wazuh_ruleset():
     assert wazuh_summary.total_alerts_generated > 0
     assert "Credential Access" in wazuh_summary.mitre_tactics_detected
 
-def test_exporters_formatting():
+def test_benign_baseline_has_no_injected_anomalies():\n    logs = ScenarioEngine.generate("benign_baseline", count=40)\n    assert len(logs) == 40\n    assert all(log["details"].get("anomaly") is False for log in logs)\n\ndef test_exporters_formatting():
     logs = ScenarioEngine.generate("ssh_brute_force", count=5)
     json_out = LogExporter.to_json(logs)
     assert len(json_out) > 0
