@@ -216,7 +216,9 @@ class ScenarioEngine:
         for i in range(count):
             current += timedelta(seconds=random.randint(2, 12))
             if i in anomaly_positions:
-                event = anomaly_builder(current, i, params)
+                event_params = dict(params)
+                event_params["_anomaly_index"] = len([x for x in logs if x.get("details", {}).get("anomaly")])
+                event = anomaly_builder(current, i, event_params)
                 event["details"]["anomaly"] = True
             else:
                 event = normal_builder(current, i)
@@ -237,7 +239,7 @@ class ScenarioEngine:
         def anomaly(ts, i, _):
             # Synthetic auth anomaly: failures are interleaved with routine work.
             port = random.randint(30000, 62000)
-            if i % 3 == 2:
+            if int(_.get("_anomaly_index", 0)) == 1:
                 msg = f"Accepted password for {user} from {external_ip} port {port} ssh2"
                 return cls._base_event(
                     ts, "linux", host, "sshd", "authentication", "success",
