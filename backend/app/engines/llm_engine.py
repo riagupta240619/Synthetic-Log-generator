@@ -50,7 +50,14 @@ Each object must have:
                     # Extract JSON array
                     parsed = cls._extract_json_array(response_text)
                     if parsed:
-                        return parsed[:count]
+                        parsed = [item for item in parsed if isinstance(item, dict)]
+                        if len(parsed) >= count:
+                            return parsed[:count]
+                        # Ollama may return a single object even when asked for an
+                        # array. Fill the remainder with the deterministic semantic
+                        # fallback so the API contract always returns the requested count.
+                        fallback = cls._generate_semantic_fallback(prompt, count - len(parsed))
+                        return (parsed + fallback)[:count]
         except Exception as e:
             logger.info(f"Ollama endpoint unreachable ({e}). Activating Semantic Intelligent LLM Fallback Engine.")
 
