@@ -56,6 +56,18 @@ class DatabaseManager:
             self.mongo_client.close()
 
     # Datasets
+    @staticmethod
+    def _normalize_dataset(dataset: Dict[str, Any]) -> Dict[str, Any]:
+        normalized = dict(dataset)
+        normalized.setdefault("description", "")
+        normalized.setdefault("file_formats_available", ["json", "ndjson", "csv", "syslog_rfc3164", "syslog_rfc5424"])
+        normalized.setdefault("schema_fields", [])
+        normalized.setdefault("validation_status", "unvalidated")
+        normalized.setdefault("validation_score", None)
+        normalized.setdefault("wazuh_tested", False)
+        normalized.setdefault("wazuh_alerts_count", 0)
+        return normalized
+
     async def save_dataset(self, dataset_dict: Dict[str, Any]) -> str:
         dataset_id = dataset_dict["id"]
         if self.is_mongo_connected and self.db is not None:
@@ -76,18 +88,20 @@ class DatabaseManager:
             try:
                 res = await self.db.datasets.find_one({"id": dataset_id}, {"_id": 0})
                 if res:
-                    return res
+                    return self._normalize_dataset(res)
             except Exception as e:
                 logger.error(f"MongoDB fetch failed: {e}")
 
         data = self._read_local_db()
-        return data.get("datasets", {}).get(dataset_id)
+        found = data.get("datasets", {}).get(dataset_id)
+        return self._normalize_dataset(found) if found else None
 
     async def list_datasets(self) -> List[Dict[str, Any]]:
         if self.is_mongo_connected and self.db is not None:
             try:
                 cursor = self.db.datasets.find({}, {"_id": 0, "logs": 0}).sort("created_at", -1)
-                return await cursor.to_list(length=100)
+                results = await cursor.to_list(length=100)
+                return [self._normalize_dataset(d) for d in results]
             except Exception as e:
                 logger.error(f"MongoDB list failed: {e}")
 
@@ -96,7 +110,7 @@ class DatabaseManager:
         # Strip heavy logs array for summary list
         summaries = []
         for d in datasets:
-            summary = {k: v for k, v in d.items() if k != "logs"}
+            summary = {k: v for k, v in self._normalize_dataset(d).items() if k != "logs"}
             summaries.append(summary)
         summaries.sort(key=lambda x: x.get("created_at", ""), reverse=True)
         return summaries
