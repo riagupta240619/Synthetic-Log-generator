@@ -52,7 +52,10 @@ async def generate_scenario(req: ScenarioGenRequest):
         "created_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "schema_fields": list(logs[0].keys()) if logs else [],
         "validation_status": "unvalidated",
+        "validation_score": None,
+        "file_formats_available": ["json", "ndjson", "csv", "syslog_rfc3164", "syslog_rfc5424"],
         "wazuh_tested": False,
+        "wazuh_alerts_count": 0,
         "logs": logs
     }
     await db_manager.save_dataset(dataset_dict)
@@ -74,7 +77,10 @@ async def generate_cloud(req: CloudGenRequest):
         "created_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "schema_fields": list(logs[0].keys()) if logs else [],
         "validation_status": "unvalidated",
+        "validation_score": None,
+        "file_formats_available": ["json", "ndjson", "csv", "syslog_rfc3164", "syslog_rfc5424"],
         "wazuh_tested": False,
+        "wazuh_alerts_count": 0,
         "logs": logs
     }
     await db_manager.save_dataset(dataset_dict)
@@ -96,7 +102,10 @@ async def generate_llm(req: LlmGenRequest):
         "created_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "schema_fields": list(logs[0].keys()) if logs else [],
         "validation_status": "unvalidated",
+        "validation_score": None,
+        "file_formats_available": ["json", "ndjson", "csv", "syslog_rfc3164", "syslog_rfc5424"],
         "wazuh_tested": False,
+        "wazuh_alerts_count": 0,
         "logs": logs
     }
     await db_manager.save_dataset(dataset_dict)
@@ -118,7 +127,10 @@ async def generate_ml(req: MLGenRequest):
         "created_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "schema_fields": list(logs[0].keys()) if logs else [],
         "validation_status": "unvalidated",
+        "validation_score": None,
+        "file_formats_available": ["json", "ndjson", "csv", "syslog_rfc3164", "syslog_rfc5424"],
         "wazuh_tested": False,
+        "wazuh_alerts_count": 0,
         "logs": logs
     }
     await db_manager.save_dataset(dataset_dict)
