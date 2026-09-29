@@ -111,7 +111,7 @@ class FileLearnerEngine:
                 return value
         if name in {"message", "raw", "log"}:
             result = text
-            result = re.sub(r"\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b", f"198.51.100.{(index % 240) + 10}", result)
+            result = re.sub(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", f"198.51.100.{(index % 240) + 10}", result)
             result = re.sub(r"([A-Za-z0-9._%+-]+)@[A-Za-z0-9.-]+", f"user{(index % 500) + 1}@synthetic.local", result)
             return result
         return value
