@@ -2,7 +2,8 @@ import re
 import ipaddress
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from app.models.log_schemas import BaseLogEvent
 
 class ValidationIssue(BaseModel):
     log_index: int
@@ -84,6 +85,21 @@ class LogValidator:
                 invalid_count += 1
                 checks["schema_structure"] = False
                 continue
+
+            # 2. Common schema validation. Provider-specific fields are allowed;
+            # the platform contract requires these normalized fields to exist.
+            try:
+                BaseLogEvent.model_validate(log)
+            except Exception as exc:
+                issues.append(ValidationIssue(
+                    log_index=idx,
+                    field="schema",
+                    issue_type="schema_validation",
+                    severity="critical",
+                    description=f"Log does not satisfy the normalized event schema: {str(exc).splitlines()[0]}"
+                ))
+                log_has_error = True
+                checks["schema_structure"] = False
 
             # 2. Timestamp check
             raw_ts = log.get("timestamp") or log.get("eventTime") or log.get("time")
