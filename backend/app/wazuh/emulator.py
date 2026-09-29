@@ -151,8 +151,9 @@ class WazuhRulesetMatcher:
         tactics_set = set()
 
         failed_login_window = []  # For correlation rule 5712 (brute force burst)
+        matched_log_indices = set()
 
-        for log in logs:
+        for log_index, log in enumerate(logs):
             msg = log.get("message", "")
             raw_str = f"{msg} {log.get('action', '')} {log.get('event_type', '')} {log.get('path', '')}"
             ts = log.get("timestamp") or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -163,6 +164,7 @@ class WazuhRulesetMatcher:
             for rule in cls.RULES:
                 if rule["pattern"].search(raw_str):
                     matched_any = True
+                    matched_log_indices.add(log_index)
                     rule_id = rule["id"]
                     rule_counts[rule_id] = rule_counts.get(rule_id, 0) + 1
 
@@ -214,7 +216,7 @@ class WazuhRulesetMatcher:
 
         total_logs = len(logs)
         total_alerts = len(alerts)
-        detection_rate = round((min(total_alerts, total_logs) / total_logs * 100.0), 2) if total_logs > 0 else 0.0
+        detection_rate = round((len(matched_log_indices) / total_logs * 100.0), 2) if total_logs > 0 else 0.0
 
         high_sev = sum(1 for a in alerts if a.level >= 10)
         med_sev = sum(1 for a in alerts if 6 <= a.level < 10)
