@@ -124,9 +124,10 @@ class CloudEngine:
         }
         pool = scenarios.get(scenario_type, scenarios["privilege_escalation"])
         logs = []
-        for op, description, severity in cls._pick_sequence(
+        for event in cls._pick_sequence(
             [{"op": a, "description": b, "severity": c} for a, b, c in pool], count
         ):
+            op, description, severity = event["op"], event["description"], event["severity"]
             current_time += timedelta(seconds=random.randint(20, 90))
             iso_time = current_time.strftime("%Y-%m-%dT%H:%M:%SZ")
             logs.append({
@@ -159,9 +160,10 @@ class CloudEngine:
         }
         pool = scenarios.get(scenario_type, scenarios["persistence_key"])
         logs = []
-        for method_name, service_name, severity in cls._pick_sequence(
+        for event in cls._pick_sequence(
             [{"method": a, "service": b, "severity": c} for a, b, c in pool], count
         ):
+            method_name, service_name, severity = event["method"], event["service"], event["severity"]
             current_time += timedelta(seconds=random.randint(15, 60))
             iso_time = current_time.strftime("%Y-%m-%dT%H:%M:%SZ")
             logs.append({
