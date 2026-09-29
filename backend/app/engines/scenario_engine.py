@@ -239,7 +239,7 @@ class ScenarioEngine:
         def anomaly(ts, i, _):
             # Synthetic auth anomaly: failures are interleaved with routine work.
             port = random.randint(30000, 62000)
-            if int(_.get("_anomaly_index", 0)) == 1:
+            if _.get("compromise_at_end", True) and int(_.get("_anomaly_index", 0)) == 1:
                 msg = f"Accepted password for {user} from {external_ip} port {port} ssh2"
                 return cls._base_event(
                     ts, "linux", host, "sshd", "authentication", "success",
