@@ -79,6 +79,43 @@ class FileLearnerEngine:
 
         return records
 
+    @staticmethod
+    def _synthetic_value(column: str, value: Any, index: int) -> Any:
+        """Generate a structure-preserving replacement for sensitive/high-cardinality values."""
+        name = column.lower()
+        text = str(value)
+
+        if "ip" in name:
+            return f"198.51.100.{(index % 240) + 10}"
+        if "email" in name:
+            return f"user{(index % 500) + 1}@synthetic.local"
+        if name in {"username", "user", "caller", "subject_user_name", "target_user_name"}:
+            prefix = re.sub(r"[^a-zA-Z0-9_-]", "", text).lower()[:12] or "user"
+            return f"{prefix}_syn_{(index % 500) + 1}"
+        if "hostname" in name or name in {"host", "computer_name"}:
+            prefix = re.sub(r"[^a-zA-Z0-9-]", "", text).upper()[:12] or "HOST"
+            return f"{prefix}-SYN-{(index % 99) + 1:02d}"
+        if name in {"id", "_id", "insertid", "correlationid", "correlation_id"}:
+            return str(uuid.uuid4())
+        if name in {"pid", "port", "status_code", "durationms"}:
+            try:
+                number = int(float(value))
+                if name == "pid":
+                    return 1000 + (index * 37) % 8000
+                if name == "port":
+                    return 40000 + (index * 97) % 20000
+                if name == "status_code":
+                    return number if 100 <= number <= 599 else 200
+                return max(1, number + random.randint(-max(1, abs(number)//10), max(1, abs(number)//10)))
+            except (TypeError, ValueError):
+                return value
+        if name in {"message", "raw", "log"}:
+            result = text
+            result = re.sub(r"\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b", f"198.51.100.{(index % 240) + 10}", result)
+            result = re.sub(r"([A-Za-z0-9._%+-]+)@[A-Za-z0-9.-]+", f"user{(index % 500) + 1}@synthetic.local", result)
+            return result
+        return value
+
     @classmethod
     def analyze_and_synthesize(cls, reference_logs: List[Dict[str, Any]], count: int = 100) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         if not reference_logs:
@@ -135,7 +172,7 @@ class FileLearnerEngine:
                     weights = list(dist.values())
                     record[col] = random.choices(keys, weights=weights)[0]
                 elif col in sample_pools:
-                    record[col] = random.choice(sample_pools[col])
+                    record[col] = cls._synthetic_value(col, random.choice(sample_pools[col]), i)
                 else:
                     record[col] = f"synthetic_{col}_{i}"
 
@@ -155,7 +192,13 @@ class FileLearnerEngine:
             "columns_discovered": list(df.columns),
             "record_count_analyzed": len(df),
             "column_types": column_types,
-            "categorical_distributions": field_distributions
+            "categorical_distributions": field_distributions,
+            "privacy_transformations": {
+                "network_addresses": "replaced_with_TEST-NET",
+                "identities": "syntheticized",
+                "high_cardinality_fields": "pattern-preserving replacements",
+                "messages": "embedded IPs/emails rewritten"
+            }
         }
 
         return profile, synthetic_logs
