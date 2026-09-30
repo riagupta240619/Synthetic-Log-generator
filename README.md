@@ -52,12 +52,14 @@ A full-stack cybersecurity platform that generates **realistic, event-aware, str
 ## 🚀 Key Features
 
 ### 1. Scenario-Based Generator
-- **SSH Brute Force & Breach:** Models password guessing across invalid users and root, followed by authentic breach, tty allocation, and post-exploitation inspection (`id`, `/etc/shadow`).
-- **Linux Privilege Escalation:** Sudo permission denials, password attempts, sudo escapes, and root shell spawning (`/bin/sh`, `/bin/bash`).
+- **SSH Brute Force & Unusual Authentication:** Builds a coherent developer work-session timeline (login, development, file access, DNS, network, and application activity) and interleaves controlled SSH authentication anomalies. A small number of failed password attempts and an optional unusual successful password login are embedded in the normal stream, with ground-truth metadata retained for evaluation.
+- **Linux Privilege Escalation:** Generates synthetic sudo, role-transition, and privileged-session audit events alongside normal enterprise activity.
 - **Web Application Attacks:** SQL Injection (`UNION SELECT`, `OR 1=1`) and Path Traversal / LFI (`/../../../../etc/passwd`, `/.env`) with realistic status codes (403, 404, 500, 200).
-- **Windows Ransomware Defense Evasion:** Event IDs 4688, 4663, and 7045 simulating `vssadmin delete shadows`, `bcdedit recovery disabled`, encoded PowerShell cradles, and mass file encryption.
+- **Windows Ransomware Staging:** Uses descriptive synthetic Event IDs 4688, 4663, and 7045 to represent suspicious process, protected-file, and service-installation behavior without generating destructive commands.
 - **Lateral Movement:** Event ID 4624 (Type 3 network logon) across domain controllers using compromised service credentials.
 - **Configurable Anomaly Ratio:** Mix 0%–100% attack events with benign background noise to simulate noisy enterprise environments.
+- **Coherent Storyline Generation:** Scenario streams preserve shared users, hosts, source IPs, sessions, activity phases, and sequence indexes so anomalies appear inside believable work activity rather than as isolated attack-only blocks.
+- **Ground-Truth Metadata:** Events expose `details.anomaly`, `storyline_id`, `sequence_index`, and scenario/stage metadata so detector output can be compared with the generator's known labels.
 
 ### 2. File Pattern Learner & Synthesizer
 - Accepts real logs in **JSON**, **JSONL**, **CSV**, or **Syslog/TXT** format.
