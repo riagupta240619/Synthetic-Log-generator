@@ -1,10 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import db_manager
 from app.routers import generation, upload, datasets, validation, wazuh
+from app.auth import require_api_key
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,11 +40,11 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(generation.router, prefix=settings.API_V1_STR)
-app.include_router(upload.router, prefix=settings.API_V1_STR)
-app.include_router(datasets.router, prefix=settings.API_V1_STR)
-app.include_router(validation.router, prefix=settings.API_V1_STR)
-app.include_router(wazuh.router, prefix=settings.API_V1_STR)
+app.include_router(generation.router, prefix=settings.API_V1_STR, dependencies=[Depends(require_api_key)])
+app.include_router(upload.router, prefix=settings.API_V1_STR, dependencies=[Depends(require_api_key)])
+app.include_router(datasets.router, prefix=settings.API_V1_STR, dependencies=[Depends(require_api_key)])
+app.include_router(validation.router, prefix=settings.API_V1_STR, dependencies=[Depends(require_api_key)])
+app.include_router(wazuh.router, prefix=settings.API_V1_STR, dependencies=[Depends(require_api_key)])
 
 @app.get("/health")
 async def health_check():
