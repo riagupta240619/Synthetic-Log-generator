@@ -210,6 +210,44 @@ Synthetic-Log-Generator/
 
 ---
 
+## ☁️ Deploying the FastAPI API on Render
+
+The backend can be deployed as a Render **Web Service**. The repository is a monorepo, so configure Render to use `backend` as the Root Directory.
+
+### Render settings
+
+- **Branch:** `main`
+- **Root Directory:** `backend`
+- **Runtime:** Python 3
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Plan:** Free is sufficient for testing
+- **Health Check Path:** `/health`
+
+Set the following secret in Render Environment Variables:
+
+- `SCENARIO_API_KEY` — a strong random value shared only with authorized API consumers.
+
+All `/api/*` endpoints require the `X-API-Key` request header. The `/health`, `/`, and `/docs` endpoints remain available for service health and API documentation.
+
+### Example API request
+
+```bash
+curl -X POST "https://YOUR-SERVICE.onrender.com/api/generate/scenario" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{
+    "scenario_name": "ssh_brute_force",
+    "count": 100,
+    "parameters": {"anomaly_ratio": 0.1}
+  }'
+```
+
+**Never commit `SCENARIO_API_KEY` to GitHub.** Store it in Render Environment Variables or another secret manager.
+
+> Note: Render's free web services can spin down after inactivity. If MongoDB is not configured, local file-backed storage is not intended as durable production storage; use MongoDB for persistent deployed datasets.
+
+---
 ## 📡 API Reference Summary
 
 | Method | Endpoint | Description |
