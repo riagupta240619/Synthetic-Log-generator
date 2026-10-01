@@ -52,12 +52,14 @@ A full-stack cybersecurity platform that generates **realistic, event-aware, str
 ## 🚀 Key Features
 
 ### 1. Scenario-Based Generator
-- **SSH Brute Force & Breach:** Models password guessing across invalid users and root, followed by authentic breach, tty allocation, and post-exploitation inspection (`id`, `/etc/shadow`).
-- **Linux Privilege Escalation:** Sudo permission denials, password attempts, sudo escapes, and root shell spawning (`/bin/sh`, `/bin/bash`).
+- **SSH Brute Force & Unusual Authentication:** Builds a coherent developer work-session timeline (login, development, file access, DNS, network, and application activity) and interleaves controlled SSH authentication anomalies. A small number of failed password attempts and an optional unusual successful password login are embedded in the normal stream, with ground-truth metadata retained for evaluation.
+- **Linux Privilege Escalation:** Generates synthetic sudo, role-transition, and privileged-session audit events alongside normal enterprise activity.
 - **Web Application Attacks:** SQL Injection (`UNION SELECT`, `OR 1=1`) and Path Traversal / LFI (`/../../../../etc/passwd`, `/.env`) with realistic status codes (403, 404, 500, 200).
-- **Windows Ransomware Defense Evasion:** Event IDs 4688, 4663, and 7045 simulating `vssadmin delete shadows`, `bcdedit recovery disabled`, encoded PowerShell cradles, and mass file encryption.
+- **Windows Ransomware Staging:** Uses descriptive synthetic Event IDs 4688, 4663, and 7045 to represent suspicious process, protected-file, and service-installation behavior without generating destructive commands.
 - **Lateral Movement:** Event ID 4624 (Type 3 network logon) across domain controllers using compromised service credentials.
 - **Configurable Anomaly Ratio:** Mix 0%–100% attack events with benign background noise to simulate noisy enterprise environments.
+- **Coherent Storyline Generation:** Scenario streams preserve shared users, hosts, source IPs, sessions, activity phases, and sequence indexes so anomalies appear inside believable work activity rather than as isolated attack-only blocks.
+- **Ground-Truth Metadata:** Events expose `details.anomaly`, `storyline_id`, `sequence_index`, and scenario/stage metadata so detector output can be compared with the generator's known labels.
 
 ### 2. File Pattern Learner & Synthesizer
 - Accepts real logs in **JSON**, **JSONL**, **CSV**, or **Syslog/TXT** format.
@@ -208,6 +210,44 @@ Synthetic-Log-Generator/
 
 ---
 
+## ☁️ Deploying the FastAPI API on Render
+
+The backend can be deployed as a Render **Web Service**. The repository is a monorepo, so configure Render to use `backend` as the Root Directory.
+
+### Render settings
+
+- **Branch:** `main`
+- **Root Directory:** `backend`
+- **Runtime:** Python 3
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Plan:** Free is sufficient for testing
+- **Health Check Path:** `/health`
+
+Set the following secret in Render Environment Variables:
+
+- `SCENARIO_API_KEY` — a strong random value shared only with authorized API consumers.
+
+All `/api/*` endpoints require the `X-API-Key` request header. The `/health`, `/`, and `/docs` endpoints remain available for service health and API documentation.
+
+### Example API request
+
+```bash
+curl -X POST "https://YOUR-SERVICE.onrender.com/api/generate/scenario" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{
+    "scenario_name": "ssh_brute_force",
+    "count": 100,
+    "parameters": {"anomaly_ratio": 0.1}
+  }'
+```
+
+**Never commit `SCENARIO_API_KEY` to GitHub.** Store it in Render Environment Variables or another secret manager.
+
+> Note: Render's free web services can spin down after inactivity. If MongoDB is not configured, local file-backed storage is not intended as durable production storage; use MongoDB for persistent deployed datasets.
+
+---
 ## 📡 API Reference Summary
 
 | Method | Endpoint | Description |

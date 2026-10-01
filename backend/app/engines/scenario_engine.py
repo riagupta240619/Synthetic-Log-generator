@@ -228,35 +228,246 @@ class ScenarioEngine:
         return logs
 
     @classmethod
-    def _generate_ssh_behavior(cls, count, start, anomaly_ratio, params):
-        user = params.get("username", "developer")
-        host = params.get("target_host", "dev-server-01")
-        external_ip = params.get("attacker_ip") or random.choice(cls.SYNTHETIC_EXTERNAL_IPS)
+    def _storyline_event(
+        cls,
+        timestamp: datetime,
+        index: int,
+        user: str,
+        host: str,
+        src_ip: str,
+        session_id: str,
+    ) -> Dict[str, Any]:
+        """Generate one event from a coherent developer work session.
 
-        def normal(ts, i):
-            return cls._normal_event(ts, i, "ssh_brute_force", user=user, host=host)
+        Instead of selecting unrelated event types at random, the storyline
+        cycles through activities a user would plausibly perform during a
+        session. The sequence remains synthetic, but related events share the
+        same user, host, source IP and session identifier.
+        """
+        phase = index % 8
 
-        def anomaly(ts, i, _):
-            # Synthetic auth anomaly: failures are interleaved with routine work.
+        if phase == 0:
             port = random.randint(30000, 62000)
-            if _.get("compromise_at_end", True) and int(_.get("_anomaly_index", 0)) == 1:
-                msg = f"Accepted password for {user} from {external_ip} port {port} ssh2"
-                return cls._base_event(
-                    ts, "linux", host, "sshd", "authentication", "success",
-                    "high", user, external_ip, "login_success", msg,
-                    {"scenario": "ssh_brute_force", "stage": "unusual_authentication"},
-                    auth_method="password",
-                )
-            attempted_user = random.choice(["developer", "admin_ops", "svc_backup"])
-            msg = f"Failed password for invalid user {attempted_user} from {external_ip} port {port} ssh2"
             return cls._base_event(
-                ts, "linux", host, "sshd", "authentication", "failure",
-                "medium", attempted_user, external_ip, "login_failed", msg,
-                {"scenario": "ssh_brute_force", "stage": "authentication_anomaly"},
-                auth_method="password",
+                timestamp, "linux", host, "sshd", "authentication",
+                "success", "informational", user, src_ip, "login_success",
+                f"Accepted publickey for {user} from {src_ip} port {port} ssh2",
+                {
+                    "scenario": "ssh_brute_force",
+                    "activity": "normal",
+                    "activity_phase": "session_start",
+                    "storyline_id": session_id,
+                    "sequence_index": index,
+                    "baseline_expected": True,
+                },
+                auth_method="publickey",
+                session_id=session_id,
             )
 
-        return cls._stream(count, start, "ssh_brute_force", anomaly_ratio, normal, anomaly, params)
+        if phase in (1, 2):
+            process = random.choice(["git", "python", "node", "code"])
+            action = random.choice(["process_start", "process_resume"])
+            return cls._base_event(
+                timestamp, "linux", host, process, "process_creation",
+                "success", "informational", user, src_ip, action,
+                f"User {user} {('started' if phase == 1 else 'resumed')} {process} on {host}",
+                {
+                    "scenario": "ssh_brute_force",
+                    "activity": "normal",
+                    "activity_phase": "development",
+                    "storyline_id": session_id,
+                    "sequence_index": index,
+                    "baseline_expected": True,
+                },
+                command_family=process,
+                session_id=session_id,
+            )
+
+        if phase in (3, 4):
+            path = random.choice([
+                f"/home/{user}/project/src/app.py",
+                f"/home/{user}/project/src/config.ts",
+                f"/home/{user}/project/README.md",
+                "/srv/shared/report.csv",
+            ])
+            return cls._base_event(
+                timestamp, "linux", host, "file-service", "file_access",
+                "success", "informational", user, src_ip, random.choice(["read", "write"]),
+                f"File activity by {user}: {path}",
+                {
+                    "scenario": "ssh_brute_force",
+                    "activity": "normal",
+                    "activity_phase": "project_work",
+                    "storyline_id": session_id,
+                    "sequence_index": index,
+                    "baseline_expected": True,
+                },
+                path=path,
+                session_id=session_id,
+            )
+
+        if phase == 5:
+            domain = random.choice([
+                "git.example.test", "registry.example.test",
+                "docs.example.test", "updates.example.test",
+            ])
+            return cls._base_event(
+                timestamp, "linux", host, "systemd-resolved", "dns_query",
+                "success", "informational", user, src_ip, "dns_query",
+                f"DNS query for {domain}",
+                {
+                    "scenario": "ssh_brute_force",
+                    "activity": "normal",
+                    "activity_phase": "dependency_lookup",
+                    "storyline_id": session_id,
+                    "sequence_index": index,
+                    "baseline_expected": True,
+                },
+                query=domain,
+                session_id=session_id,
+            )
+
+        if phase == 6:
+            destination = random.choice(["10.0.0.20", "10.0.0.30", "10.0.0.40"])
+            destination_port = random.choice([443, 5432])
+            return cls._base_event(
+                timestamp, "linux", host, "network-manager", "network_connection",
+                "success", "informational", user, src_ip, "connection_established",
+                f"Outbound connection from {host} to {destination}:{destination_port}",
+                {
+                    "scenario": "ssh_brute_force",
+                    "activity": "normal",
+                    "activity_phase": "service_access",
+                    "storyline_id": session_id,
+                    "sequence_index": index,
+                    "baseline_expected": True,
+                },
+                destination_ip=destination,
+                destination_port=destination_port,
+                session_id=session_id,
+            )
+
+        app = random.choice(["Git", "Jira", "VSCode"])
+        return cls._base_event(
+            timestamp, "linux", host, app.lower(), "application",
+            "success", "informational", user, src_ip, "request",
+            f"{app} request completed for user {user}",
+            {
+                "scenario": "ssh_brute_force",
+                "activity": "normal",
+                "activity_phase": "application_use",
+                "storyline_id": session_id,
+                "sequence_index": index,
+                "baseline_expected": True,
+            },
+            session_id=session_id,
+        )
+
+    @classmethod
+    def _generate_ssh_behavior(cls, count, start, anomaly_ratio, params):
+        """Generate a believable work-session timeline with interleaved SSH anomalies.
+
+        The background is a single synthetic user's work session rather than a
+        bag of unrelated random events. Authentication anomalies are embedded
+        into that session and carry ground-truth metadata so the detector can be
+        evaluated without making the attack visually obvious.
+        """
+        user = params.get("username", "developer")
+        host = params.get("target_host", "dev-server-01")
+        internal_ip = params.get("internal_ip") or random.choice(cls.INTERNAL_IPS)
+        external_ip = params.get("attacker_ip") or random.choice(cls.SYNTHETIC_EXTERNAL_IPS)
+        session_id = f"work-{uuid.uuid4().hex[:10]}"
+        campaign_id = f"ssh-campaign-{uuid.uuid4().hex[:8]}"
+
+        anomaly_count = max(0, int(round(count * anomaly_ratio)))
+        anomaly_positions = set()
+        if anomaly_count:
+            # Keep anomalies distributed through the session, but add small
+            # jitter so repeated datasets do not have identical spacing.
+            step = count / anomaly_count
+            for n in range(anomaly_count):
+                center = n * step
+                jitter = random.uniform(-step * 0.18, step * 0.18)
+                pos = int(max(1, min(count - 1, center + jitter)))
+                anomaly_positions.add(pos)
+
+        # Preserve the existing testable behavior: when enough anomaly slots
+        # exist, the second anomaly represents an unusual successful login.
+        success_anomaly_index = 1 if params.get("compromise_at_end", True) and anomaly_count >= 2 else -1
+
+        logs = []
+        current = start
+        anomaly_index = 0
+
+        for i in range(count):
+            # Work activity has uneven timing rather than a fixed heartbeat.
+            current += timedelta(seconds=random.randint(4, 45))
+
+            if i not in anomaly_positions:
+                event = cls._storyline_event(
+                    current, i, user, host, internal_ip, session_id
+                )
+                event["details"]["anomaly"] = False
+                logs.append(event)
+                continue
+
+            port = random.randint(30000, 62000)
+
+            if anomaly_index == success_anomaly_index:
+                # A single successful password authentication is modeled as a
+                # subtle deviation from the user's normal public-key session.
+                msg = f"Accepted password for {user} from {external_ip} port {port} ssh2"
+                event = cls._base_event(
+                    current, "linux", host, "sshd", "authentication",
+                    "success", "high", user, external_ip, "login_success",
+                    msg,
+                    {
+                        "scenario": "ssh_brute_force",
+                        "stage": "unusual_authentication",
+                        "activity": "authentication_anomaly",
+                        "storyline_id": session_id,
+                        "sequence_index": i,
+                        "baseline_expected": False,
+                        "attack_campaign_id": campaign_id,
+                        "attempt_number": anomaly_index + 1,
+                    },
+                    auth_method="password",
+                    session_id=session_id,
+                )
+            else:
+                attempted_user = random.choice([
+                    user, "admin_ops", "svc_backup", "developer"
+                ])
+                # Keep the event format familiar to SSH telemetry while making
+                # the failed attempts part of the same synthetic timeline.
+                invalid_prefix = "invalid user " if attempted_user != user else ""
+                msg = (
+                    f"Failed password for {invalid_prefix}{attempted_user} "
+                    f"from {external_ip} port {port} ssh2"
+                )
+                event = cls._base_event(
+                    current, "linux", host, "sshd", "authentication",
+                    "failure", "medium", attempted_user, external_ip,
+                    "login_failed", msg,
+                    {
+                        "scenario": "ssh_brute_force",
+                        "stage": "authentication_anomaly",
+                        "activity": "authentication_anomaly",
+                        "storyline_id": session_id,
+                        "sequence_index": i,
+                        "baseline_expected": False,
+                        "attack_campaign_id": campaign_id,
+                        "attempt_number": anomaly_index + 1,
+                    },
+                    auth_method="password",
+                    session_id=session_id,
+                )
+
+            event["details"]["anomaly"] = True
+            logs.append(event)
+            anomaly_index += 1
+
+        return logs
 
     @classmethod
     def _generate_privilege_behavior(cls, count, start, anomaly_ratio, params):
