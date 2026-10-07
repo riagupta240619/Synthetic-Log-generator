@@ -59,7 +59,7 @@ async def generate_scenario(req: ScenarioGenRequest):
         "logs": logs
     }
     await db_manager.save_dataset(dataset_dict)
-    return {"dataset_id": dataset_id, "name": name, "count": len(logs), "logs_sample": logs[:5]}
+    return {"dataset_id": dataset_id, "name": name, "scenario": req.scenario_name, "count": len(logs), "logs": logs}
 
 @router.post("/cloud")
 async def generate_cloud(req: CloudGenRequest):
@@ -84,7 +84,7 @@ async def generate_cloud(req: CloudGenRequest):
         "logs": logs
     }
     await db_manager.save_dataset(dataset_dict)
-    return {"dataset_id": dataset_id, "name": name, "count": len(logs), "logs_sample": logs[:5]}
+    return {"dataset_id": dataset_id, "name": name, "provider": req.provider, "scenario": req.scenario_type, "count": len(logs), "logs": logs}
 
 @router.post("/llm")
 async def generate_llm(req: LlmGenRequest):
@@ -109,7 +109,7 @@ async def generate_llm(req: LlmGenRequest):
         "logs": logs
     }
     await db_manager.save_dataset(dataset_dict)
-    return {"dataset_id": dataset_id, "name": name, "count": len(logs), "logs_sample": logs[:5]}
+    return {"dataset_id": dataset_id, "name": name, "scenario": req.prompt, "count": len(logs), "logs": logs}
 
 @router.post("/ml")
 async def generate_ml(req: MLGenRequest):
@@ -134,4 +134,4 @@ async def generate_ml(req: MLGenRequest):
         "logs": logs
     }
     await db_manager.save_dataset(dataset_dict)
-    return {"dataset_id": dataset_id, "name": name, "count": len(logs), "logs_sample": logs[:5]}
+    return {"dataset_id": dataset_id, "name": name, "scenario": "Markov_Attacker_Lifecycle", "count": len(logs), "logs": logs}
